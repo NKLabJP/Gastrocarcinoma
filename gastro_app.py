@@ -3,7 +3,7 @@ import streamlit as st
 def main():
     st.title("Gastrocarcinoma Treatment Decision Support (Demo)")
 
-    # Optional: Collect user profile in a separate function
+    # Check if profile is complete; if not, go to profile page
     if "profile_complete" not in st.session_state:
         st.session_state.profile_complete = False
 
@@ -25,15 +25,13 @@ def main():
     # Display existing options with Remove buttons
     st.write("**Current Treatment Options:**")
     for i, opt in enumerate(st.session_state.treatment_options):
-        # Using columns to place "Remove" button to the right
         col1, col2 = st.columns([6,1])
         with col1:
             st.write(f"{i+1}. {opt}")
         with col2:
-            remove_key = f"remove_option_{i}"
-            if st.button("Remove", key=remove_key):
+            if st.button("Remove", key=f"remove_option_{i}"):
                 st.session_state.treatment_options.pop(i)
-                st.experimental_rerun()  # Refresh after removal
+                st.experimental_rerun()
 
     # Let user add a new option
     new_option = st.text_input("Add a new treatment option:")
@@ -61,8 +59,7 @@ def main():
         with col1:
             st.write(f"{i+1}. {out}")
         with col2:
-            remove_key = f"remove_outcome_{i}"
-            if st.button("Remove", key=remove_key):
+            if st.button("Remove", key=f"remove_outcome_{i}"):
                 st.session_state.outcomes.pop(i)
                 st.experimental_rerun()
 
@@ -107,7 +104,7 @@ def main():
                     key=f"slider_value_{opt}_{out}"
                 )
             with col2:
-                lik_label = f"{out} - Likelihood for {opt}"
+                lik_label = f"{out} - Likelihood (Probability) for {opt}"
                 st.session_state.oovl_data[opt][out]["likelihood"] = st.slider(
                     lik_label, 0, 100, 
                     st.session_state.oovl_data[opt][out]["likelihood"],
@@ -135,8 +132,7 @@ def main():
                 key=f"constraint_importance_{i}"
             )
         with col2:
-            remove_key = f"remove_constraint_{i}"
-            if st.button("Remove", key=remove_key):
+            if st.button("Remove", key=f"remove_constraint_{i}"):
                 st.session_state.constraints_list.pop(i)
                 st.experimental_rerun()
 
@@ -150,22 +146,34 @@ def main():
             })
             st.experimental_rerun()
 
+    st.write("---")
+
     ########################
     # CALCULATE / COMPARE
     ########################
 
-    st.write("---")
     if st.button("Compare Treatment Options"):
         compare_treatments()
 
-def profile_page():
-    """Simple example of a profile page."""
-    st.title("User Profile for Gastrocarcinoma App")
-    name = st.text_input("Your Name:")
-    age = st.number_input("Your Age:", min_value=0, max_value=120, value=40)
 
-    if st.button("Next"):
-        st.session_state.user_name = name
+def profile_page():
+    """Profile page that collects prefecture and age instead of name."""
+    st.title("ユーザープロファイル")
+
+    # Example list of prefectures — expand or modify as needed.
+    prefectures = [
+        "北海道", "青森県", "岩手県", "宮城県", "秋田県",
+        "山形県", "福島県", "茨城県", "栃木県", "群馬県",
+        "埼玉県", "千葉県", "東京都", "神奈川県",
+        "新潟県", "富山県", "石川県", "福井県"
+        # ... add more as necessary ...
+    ]
+
+    selected_prefecture = st.selectbox("都道府県を選択してください:", prefectures)
+    age = st.number_input("年齢を入力してください:", min_value=0, max_value=120, value=40)
+
+    if st.button("次へ"):
+        st.session_state.prefecture = selected_prefecture
         st.session_state.user_age = age
         st.session_state.profile_complete = True
 
@@ -190,8 +198,7 @@ def compare_treatments():
         total_constraints += importance_scaled
 
     st.write(f"Aggregate Constraints score: {total_constraints:.2f}")
-    st.info("You can incorporate the constraints into your final scoring, e.g., 'net score' = OOVL - constraints, or any other formula you define.")
-
+    st.info("You can incorporate the constraints into your final scoring, e.g. 'net score' = OOVL - constraints, or any other formula you define.")
 
 if __name__ == "__main__":
     main()
