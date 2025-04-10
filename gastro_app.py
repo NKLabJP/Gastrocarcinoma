@@ -1,20 +1,18 @@
 import streamlit as st
 
 def main():
+    # Title
     st.title("Gastrocarcinoma Treatment Decision Support (Demo)")
 
-    # Check if profile is complete; if not, go to profile page
+    # 1) Check if profile is complete; if not, go to profile page
     if "profile_complete" not in st.session_state:
         st.session_state.profile_complete = False
 
     if not st.session_state.profile_complete:
         profile_page()
-        return
+        return  # Stop here until the user clicks "次へ"
 
-    ########################
-    # TREATMENT OPTIONS
-    ########################
-
+    # 2) TREATMENT OPTIONS
     st.subheader("Select or Define Treatment Options")
 
     # Initialize or retrieve the list of treatment options
@@ -29,36 +27,29 @@ def main():
         with col1:
             st.write(f"{i+1}. {opt}")
         with col2:
-            # Key is unique so Streamlit doesn't mix up buttons
             if st.button("Remove", key=f"remove_option_{i}"):
-                # SAFE removal: rebuild the list without index i
+                # SAFE removal via list comprehension
                 st.session_state.treatment_options = [
-                    item for idx, item in enumerate(st.session_state.treatment_options) 
+                    item for idx, item in enumerate(st.session_state.treatment_options)
                     if idx != i
                 ]
-                # No st.experimental_rerun() call here
-                # The list is updated; the UI will reflect it after the next user interaction
+                # No st.experimental_rerun(): changes show on next interaction
 
     # Let user add a new option
     new_option = st.text_input("Add a new treatment option:")
     if st.button("Add Option"):
         if new_option.strip():
             st.session_state.treatment_options.append(new_option.strip())
-            # No st.experimental_rerun() -- update will appear after next interaction
+            # No st.experimental_rerun()
 
     st.write("---")
 
-    ########################
-    # OUTCOMES
-    ########################
-
+    # 3) OUTCOMES
     st.subheader("Outcomes to Evaluate in OOVL")
 
-    # Initialize or retrieve the list of outcomes
     if "outcomes" not in st.session_state:
         st.session_state.outcomes = ["Prolonged survival", "Severe nausea", "Hospital stay length"]
 
-    # Display existing outcomes with Remove buttons
     st.write("**Current Outcomes:**")
     for i, out in enumerate(st.session_state.outcomes):
         col1, col2 = st.columns([6,1])
@@ -67,40 +58,33 @@ def main():
         with col2:
             if st.button("Remove", key=f"remove_outcome_{i}"):
                 st.session_state.outcomes = [
-                    item for idx, item in enumerate(st.session_state.outcomes) 
+                    item for idx, item in enumerate(st.session_state.outcomes)
                     if idx != i
                 ]
-                # No st.experimental_rerun()
 
-    # Let user add a new outcome
     new_outcome = st.text_input("Add a new outcome:")
     if st.button("Add Outcome"):
         if new_outcome.strip():
             st.session_state.outcomes.append(new_outcome.strip())
-            # No st.experimental_rerun()
 
     st.write("---")
 
-    ########################
-    # OOVL DATA ENTRY
-    ########################
-
-    # Initialize data structure for storing OOVL sliders
+    # 4) OOVL DATA ENTRY
     if "oovl_data" not in st.session_state:
         st.session_state.oovl_data = {}
 
-    # Ensure each option–outcome pair has a "value" and "likelihood"
+    # Ensure each option–outcome pair has "value" and "likelihood"
     for opt in st.session_state.treatment_options:
         if opt not in st.session_state.oovl_data:
             st.session_state.oovl_data[opt] = {}
         for out in st.session_state.outcomes:
             if out not in st.session_state.oovl_data[opt]:
                 st.session_state.oovl_data[opt][out] = {
-                    "value": 50,       # default midpoint
-                    "likelihood": 50   # default midpoint
+                    "value": 50,
+                    "likelihood": 50
                 }
 
-    # Display sliders for each option–outcome pair
+    # Show sliders
     for opt in st.session_state.treatment_options:
         st.write(f"### OOVL Sliders for {opt}")
         for out in st.session_state.outcomes:
@@ -119,18 +103,15 @@ def main():
                     st.session_state.oovl_data[opt][out]["likelihood"],
                     key=f"slider_likelihood_{opt}_{out}"
                 )
+
     st.write("---")
 
-    ########################
-    # CONSTRAINTS
-    ########################
-
+    # 5) CONSTRAINTS
     st.subheader("Constraints / Concerns (Free-Text)")
 
     if "constraints_list" not in st.session_state:
         st.session_state.constraints_list = []
 
-    # Display existing constraints with Remove buttons
     for i, c in enumerate(st.session_state.constraints_list):
         col1, col2 = st.columns([6,1])
         with col1:
@@ -146,9 +127,7 @@ def main():
                     item for idx, item in enumerate(st.session_state.constraints_list)
                     if idx != i
                 ]
-                # No st.experimental_rerun()
 
-    # Let user add a new constraint
     new_constraint = st.text_input("Enter a new concern or constraint:")
     if st.button("Add Constraint"):
         if new_constraint.strip():
@@ -156,29 +135,23 @@ def main():
                 "description": new_constraint.strip(),
                 "importance": 50
             })
-            # No st.experimental_rerun()
 
     st.write("---")
 
-    ########################
-    # CALCULATE / COMPARE
-    ########################
-
+    # 6) CALCULATE / COMPARE
     if st.button("Compare Treatment Options"):
         compare_treatments()
-
 
 def profile_page():
     """Profile page that collects prefecture and age instead of name."""
     st.title("ユーザープロファイル")
 
-    # Example list of prefectures — expand or modify as needed.
+    # Example prefecture list
     prefectures = [
         "北海道", "青森県", "岩手県", "宮城県", "秋田県",
         "山形県", "福島県", "茨城県", "栃木県", "群馬県",
         "埼玉県", "千葉県", "東京都", "神奈川県",
         "新潟県", "富山県", "石川県", "福井県"
-        # ... add more as necessary ...
     ]
 
     selected_prefecture = st.selectbox("都道府県を選択してください:", prefectures)
@@ -189,9 +162,8 @@ def profile_page():
         st.session_state.user_age = age
         st.session_state.profile_complete = True
 
-
 def compare_treatments():
-    """Naive example of summing up (value * likelihood) for each option."""
+    """Naive example: sum (value * likelihood) for each option."""
     st.write("## Comparison Results:")
 
     oovl_data = st.session_state.oovl_data
@@ -204,15 +176,13 @@ def compare_treatments():
             total_score += (v * l)
         st.write(f"- **{opt}** raw OOVL score: {total_score:.2f}")
 
-    # Aggregate constraint score
+    # Sum constraints
     total_constraints = 0.0
     for c in st.session_state.constraints_list:
-        importance_scaled = c["importance"] / 100.0
-        total_constraints += importance_scaled
+        total_constraints += c["importance"] / 100.0
 
     st.write(f"Aggregate Constraints score: {total_constraints:.2f}")
-    st.info("You can incorporate the constraints into your final scoring, e.g. 'net score' = OOVL - constraints, or any other formula you define.")
-
+    st.info("You can incorporate constraints into final scoring, e.g., net = OOVL - constraints, etc.")
 
 if __name__ == "__main__":
     main()
