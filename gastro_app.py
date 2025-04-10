@@ -29,16 +29,22 @@ def main():
         with col1:
             st.write(f"{i+1}. {opt}")
         with col2:
+            # Key is unique so Streamlit doesn't mix up buttons
             if st.button("Remove", key=f"remove_option_{i}"):
-                st.session_state.treatment_options.pop(i)
-                st.experimental_rerun()
+                # SAFE removal: rebuild the list without index i
+                st.session_state.treatment_options = [
+                    item for idx, item in enumerate(st.session_state.treatment_options) 
+                    if idx != i
+                ]
+                # No st.experimental_rerun() call here
+                # The list is updated; the UI will reflect it after the next user interaction
 
     # Let user add a new option
     new_option = st.text_input("Add a new treatment option:")
     if st.button("Add Option"):
         if new_option.strip():
             st.session_state.treatment_options.append(new_option.strip())
-            st.experimental_rerun()
+            # No st.experimental_rerun() -- update will appear after next interaction
 
     st.write("---")
 
@@ -60,15 +66,18 @@ def main():
             st.write(f"{i+1}. {out}")
         with col2:
             if st.button("Remove", key=f"remove_outcome_{i}"):
-                st.session_state.outcomes.pop(i)
-                st.experimental_rerun()
+                st.session_state.outcomes = [
+                    item for idx, item in enumerate(st.session_state.outcomes) 
+                    if idx != i
+                ]
+                # No st.experimental_rerun()
 
     # Let user add a new outcome
     new_outcome = st.text_input("Add a new outcome:")
     if st.button("Add Outcome"):
         if new_outcome.strip():
             st.session_state.outcomes.append(new_outcome.strip())
-            st.experimental_rerun()
+            # No st.experimental_rerun()
 
     st.write("---")
 
@@ -99,14 +108,14 @@ def main():
             with col1:
                 val_label = f"{out} - Value (Importance) for {opt}"
                 st.session_state.oovl_data[opt][out]["value"] = st.slider(
-                    val_label, 0, 100, 
+                    val_label, 0, 100,
                     st.session_state.oovl_data[opt][out]["value"],
                     key=f"slider_value_{opt}_{out}"
                 )
             with col2:
                 lik_label = f"{out} - Likelihood (Probability) for {opt}"
                 st.session_state.oovl_data[opt][out]["likelihood"] = st.slider(
-                    lik_label, 0, 100, 
+                    lik_label, 0, 100,
                     st.session_state.oovl_data[opt][out]["likelihood"],
                     key=f"slider_likelihood_{opt}_{out}"
                 )
@@ -133,8 +142,11 @@ def main():
             )
         with col2:
             if st.button("Remove", key=f"remove_constraint_{i}"):
-                st.session_state.constraints_list.pop(i)
-                st.experimental_rerun()
+                st.session_state.constraints_list = [
+                    item for idx, item in enumerate(st.session_state.constraints_list)
+                    if idx != i
+                ]
+                # No st.experimental_rerun()
 
     # Let user add a new constraint
     new_constraint = st.text_input("Enter a new concern or constraint:")
@@ -144,7 +156,7 @@ def main():
                 "description": new_constraint.strip(),
                 "importance": 50
             })
-            st.experimental_rerun()
+            # No st.experimental_rerun()
 
     st.write("---")
 
@@ -177,6 +189,7 @@ def profile_page():
         st.session_state.user_age = age
         st.session_state.profile_complete = True
 
+
 def compare_treatments():
     """Naive example of summing up (value * likelihood) for each option."""
     st.write("## Comparison Results:")
@@ -199,6 +212,7 @@ def compare_treatments():
 
     st.write(f"Aggregate Constraints score: {total_constraints:.2f}")
     st.info("You can incorporate the constraints into your final scoring, e.g. 'net score' = OOVL - constraints, or any other formula you define.")
+
 
 if __name__ == "__main__":
     main()
